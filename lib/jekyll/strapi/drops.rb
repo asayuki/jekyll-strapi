@@ -10,7 +10,6 @@ module Jekyll
 
       def [](attribute)
         value = @document[attribute]
-
         case value
         when OpenStruct
           StrapiDocumentDrop.new(value)

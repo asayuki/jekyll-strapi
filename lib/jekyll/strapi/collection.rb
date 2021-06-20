@@ -1,7 +1,6 @@
 require "net/http"
 require "ostruct"
 require "json"
-
 module Jekyll
   module Strapi
     class StrapiCollection
@@ -21,16 +20,25 @@ module Jekyll
         # Initialize the HTTP query
         path = "/#{@config['type'] || @collection_name}?_limit=10000#{@config['query'] || ''}"
         uri = URI("#{@site.endpoint}#{path}")
-        Jekyll.logger.info "Jekyll Strapi:", "Fetching entries from #{uri}"
-        # Get entries
-        response = Net::HTTP.get_response(uri)
-        # Check response code
-        if response.code == "200"
-          result = JSON.parse(response.body, object_class: OpenStruct)
-        elsif response.code == "401"
-          raise "The Strapi server sent a error with the following status: #{response.code}. Please make sure you authorized the API access in the Users & Permissions section of the Strapi admin panel."
+        
+        result = nil
+
+        if $result_uris.include?(uri)
+          Jekyll.logger.info "Jekyll Strapi:", "Fetching #{@config['type']} from cache"
+          result_index = $result_uris.index(uri)
+          result = $result_data[result_index]
         else
-          raise "The Strapi server sent a error with the following status: #{response.code}. Please make sure it is correctly running."
+          Jekyll.logger.info "Jekyll Strapi:", "Fetching #{@config['type']} from #{uri}"
+          response = Net::HTTP.get_response(uri)
+          if response.code == "200"
+            result = JSON.parse(response.body, object_class: OpenStruct)
+            $result_uris.push(uri)
+            $result_data.push(result)
+          elsif response.code == "401"
+            raise "The Strapi server sent a error with the following status: #{response.code}. Please make sure you authorized the API access in the Users & Permissions section of the Strapi admin panel."
+          else
+            raise "The Strapi server sent a error with the following status: #{response.code}. Please make sure it is correctly running."
+          end
         end
 
         # Add necessary properties

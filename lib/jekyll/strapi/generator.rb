@@ -5,6 +5,8 @@ module Jekyll
       safe true
 
       def generate(site)
+        $result_uris = []
+        $result_data = []
         site.strapi_collections.each do |collection_name, collection|
           if collection.generate?
             collection.each do |document|
